@@ -6,8 +6,12 @@ import './Home.css'
 const Home = () => {
   return (
     <div className='home'>
-      <Header />
-      <TermSearch />
+      <header>
+        <Header />
+      </header>
+      <main>
+        <TermSearch />
+      </main>
     </div>
   )
 }
