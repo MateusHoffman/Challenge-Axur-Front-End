@@ -5,7 +5,7 @@ const fetchIdTerm = async (searchTerm) => {
   const options = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    url: 'http://testapp.axreng.com:3000/crawl/',
+    url: 'http://testapp.axreng.com:3000/crawl',
     data: keyword,
   };
   try {
@@ -22,7 +22,7 @@ const fetchLinksTerm = async (selectTerm, arrResFetchTerm) => {
     const options = {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      url: `http://testapp.axreng.com:3000/crawl/${id}/`,
+      url: `http://testapp.axreng.com:3000/crawl/${id}`,
     };
     try {
       const response = await axios(options)
