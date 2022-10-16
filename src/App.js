@@ -1,11 +1,12 @@
 import React from 'react'
 import GlobalProvider from './Contexts/globalContext'
+import Home from './pages/Home';
 
 const App = () => {
   return (
     <GlobalProvider>
       <div className="App">
-        <h1>APP</h1>
+        <Home />
       </div>
     </GlobalProvider>
   );
