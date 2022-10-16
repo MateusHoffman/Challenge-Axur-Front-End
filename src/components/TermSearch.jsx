@@ -1,33 +1,30 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios';
+import Progress from "react-svg-progress";
 
-// import TermCarousel from './TermCarousel';
+import { fetchIdTerm,fetchLinksTerm } from '../helpers/requestAPI';
+import TermCarousel from './TermCarousel';
 
 import LogoAxur from '../images/Logo-Axur.svg'
 import IconSearch from '../images/icon-search.svg'
 import './TermSearch.css'
+import { getStorage, removeStorage, setStorage } from '../helpers/localStorage';
 
 const TermSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [disableButton, setDisableButton] = useState(true);
-  const [arrResFetchTerm, setArrResFetchTerm] = useState([{name: 'Linux'},{name: 'Axur'}]);
+  const [arrResFetchTerm, setArrResFetchTerm] = useState([]);
+  const [objResFetchLink, setObjResFetchLink] = useState({});
   const [termExists, setTermExists] = useState(false)
+  const [selectTerm, setSelectTerm] = useState('');
 
-  const requestApiTerm = async () => {
-    const keyword = { 'keyword': searchTerm };
-    const options = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      url: 'http://testapp.axreng.com:3000/crawl',
-      data: keyword,
-    };
-    try {
-      await axios(options)
-        .then((response) => setArrResFetchTerm([...arrResFetchTerm, { name: searchTerm, id: response.data.id }]));
-    } catch (e) {
-      return alert('erro de conexão!')
-    }
-    console.log(arrResFetchTerm);
+  const requestGetLinksTerm = async () => {
+    const response = await fetchLinksTerm(selectTerm, arrResFetchTerm)
+    if (response) setObjResFetchLink(response.data)
+  }
+
+  const requestGetIdTerm = async () => {
+    const id = await fetchIdTerm(searchTerm)
+    setArrResFetchTerm([...arrResFetchTerm, { name: searchTerm, id }])
   }
 
   const processTermRequest = (term, e) => {
@@ -40,22 +37,40 @@ const TermSearch = () => {
     if (!thisTermExists) {
       setSearchTerm('')
       setTermExists(false);
-      return requestApiTerm()
+      return requestGetIdTerm()
     }
   };
+
+  const updateTermHistory = () => {
+    const arrTerm = getStorage('terms');
+    if (arrTerm.length > 0) return setArrResFetchTerm(arrTerm);
+  }
+
+  const handleDeleteButton = (id) => {
+    const newArr = removeStorage('terms', id)
+    return setArrResFetchTerm(newArr)
+  }
+
+  useEffect(() => updateTermHistory(), []);
+
+  useEffect(() => setStorage('terms', arrResFetchTerm), [arrResFetchTerm]);
 
   useEffect(() => {
     if (searchTerm.length > 4) setDisableButton(false);
     if (searchTerm.length < 5 || searchTerm.length > 31) setDisableButton(true);
   }, [searchTerm]);
 
+  useEffect(() => {
+    requestGetLinksTerm()
+  }, [selectTerm, arrResFetchTerm, objResFetchLink]);
+
   return (
-    <div className='term-search'>
+    <div className='term-search' >
       <header>
         <img src={ LogoAxur } alt="Logo Axur" />
       </header>
       <main>
-        <form>
+        <form className='form-search'>
           <input
             type="text"
             placeholder={ termExists ? 'Existing term, enter another' : 'Search'}
@@ -70,20 +85,50 @@ const TermSearch = () => {
             <img src={ IconSearch } alt="Icon search" />
           </button>
         </form>
-        {/* <TermCarousel /> */}
-        {
-          arrResFetchTerm.map((term, index) => (
-            <div key={index}>
-              <div>
-                <p>{term.name}</p>
-              </div>
-            </div>
-          ))
-        }
+        <div className='div-term-carousel'>
+          <TermCarousel
+            arrResFetchTerm={ arrResFetchTerm }
+            handleDeleteButton={ handleDeleteButton }
+            selectTerm={ selectTerm }
+            setSelectTerm={ setSelectTerm }
+          />
+        </div>
       </main>
-      <footer>
-        {/* Load */}
-      </footer>
+      {
+        arrResFetchTerm && arrResFetchTerm.length > 0
+        && (
+          <footer>
+            {
+              objResFetchLink !== {} && selectTerm !== ''
+              && (
+                <>
+                  <div className='div-load'>
+                    {
+                      objResFetchLink.status === 'active'
+                      && (<Progress size={30} strokeWidth={2} color={'#000000'} />)
+                    }
+                  </div>
+                  <div
+                    className='div-urls'
+                    style={objResFetchLink.status !== 'active' ? {height: '75%'} : {height: '55%'}}
+                  >
+                    {
+                      objResFetchLink.urls
+                      && (
+                        objResFetchLink.urls.map((link, index) => (
+                          <div key={index}>
+                            <a href={link} target="_blank" rel="noreferrer">{link.replace("http://hiring.axreng.com", "")}</a>
+                          </div>
+                        ))
+                      )
+                    }
+                </div>
+              </>
+              )
+            }
+          </footer>
+        )
+      }
     </div>
   )
 }
