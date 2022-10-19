@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react'
 import Progress from "react-svg-progress";
 
 import { fetchIdTerm,fetchLinksTerm } from '../helpers/requestAPI';
-import TermCarousel from './TermCarousel';
+import { getStorage, removeStorage, setStorage } from '../helpers/localStorage';
 
 import LogoAxur from '../images/Logo-Axur.svg'
 import IconSearch from '../images/icon-search.svg'
+import IconDeleteBlack from '../images/icon-X-black.svg'
+import IconDeleteWhite from '../images/icon-X-white.svg'
 import './TermSearch.css'
-import { getStorage, removeStorage, setStorage } from '../helpers/localStorage';
+import './Carousel.css'
+
 
 const TermSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,8 +21,10 @@ const TermSearch = () => {
   const [selectTerm, setSelectTerm] = useState('');
 
   const requestGetLinksTerm = async () => {
-    const response = await fetchLinksTerm(selectTerm, arrResFetchTerm)
-    if (response) setObjResFetchLink(response.data)
+    if (arrResFetchTerm[0]) {
+      const response = await fetchLinksTerm(selectTerm, arrResFetchTerm)
+      if (response) setObjResFetchLink(response.data)
+    }
   }
 
   const requestGetIdTerm = async () => {
@@ -62,7 +67,7 @@ const TermSearch = () => {
 
   useEffect(() => {
     requestGetLinksTerm()
-  }, [selectTerm, arrResFetchTerm, objResFetchLink]);
+  }, [selectTerm, arrResFetchTerm]);
 
   return (
     <div className='term-search' >
@@ -72,6 +77,7 @@ const TermSearch = () => {
       <main>
         <form className='form-search'>
           <input
+            data-testid="inputSearch"
             type="text"
             placeholder={ termExists ? 'Existing term, enter another' : 'Search'}
             value={searchTerm}
@@ -79,6 +85,7 @@ const TermSearch = () => {
           />
           <button
             type='submit'
+            data-testid="btnSearch"
             disabled={ disableButton }
             onClick={(e) => processTermRequest(searchTerm, e)}
           >
@@ -86,46 +93,51 @@ const TermSearch = () => {
           </button>
         </form>
         <div className='div-term-carousel'>
-          <TermCarousel
-            arrResFetchTerm={ arrResFetchTerm }
-            handleDeleteButton={ handleDeleteButton }
-            selectTerm={ selectTerm }
-            setSelectTerm={ setSelectTerm }
-          />
+          <div className='carousel'>
+            {
+              arrResFetchTerm.map((term, index) => 
+              <div
+                key={index}
+                data-testid={ `${term.name}-item-carousel` }
+                onClick={ (e) => setSelectTerm(e.target.innerText) }
+                className={`item-carousel ${selectTerm === term.name ? 'item-selected' : ''}`}
+              >
+                <p data-testid={`name-${term.name}`}>{term.name}</p>
+                <button
+                onClick={ () => handleDeleteButton(term.id) }
+              >
+                <img src={ selectTerm === term.name ? IconDeleteWhite : IconDeleteBlack } alt="Delete icon" />
+              </button>
+              </div> )
+            }
+          </div>
         </div>
       </main>
       {
         arrResFetchTerm && arrResFetchTerm.length > 0
         && (
           <footer>
+            <div className='div-load' data-testid='div-load'>
+              {
+                objResFetchLink.status === 'active'
+                && (<Progress size={30} strokeWidth={2} color={'#000000'} />)
+              }
+            </div>
+            <div
+              className='div-urls'
+              data-testid='div-urls'
+              style={objResFetchLink.status !== 'active' ? {height: '80%'} : {height: '75%'}}
+            >
             {
-              objResFetchLink !== {} && selectTerm !== ''
-              && (
-                <>
-                  <div className='div-load'>
-                    {
-                      objResFetchLink.status === 'active'
-                      && (<Progress size={30} strokeWidth={2} color={'#000000'} />)
-                    }
+              objResFetchLink.urls
+              && (objResFetchLink.urls.map((link, index) => (
+                  <div key={index}>
+                    <a href={link} target="_blank" rel="noreferrer">{link.replace("http://hiring.axreng.com", "")}</a>
                   </div>
-                  <div
-                    className='div-urls'
-                    style={objResFetchLink.status !== 'active' ? {height: '75%'} : {height: '55%'}}
-                  >
-                    {
-                      objResFetchLink.urls
-                      && (
-                        objResFetchLink.urls.map((link, index) => (
-                          <div key={index}>
-                            <a href={link} target="_blank" rel="noreferrer">{link.replace("http://hiring.axreng.com", "")}</a>
-                          </div>
-                        ))
-                      )
-                    }
-                </div>
-              </>
+                ))
               )
             }
+            </div>
           </footer>
         )
       }
